@@ -19,16 +19,19 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr v-for="row in data">
+                            <tr v-for="(row, index) in data">
                                 <td v-for="(dataColumn, columnName) in row">
                                     <input type="text" class="form-control" v-model="row[columnName]"/>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-danger" @click="removeRow(index)">Delete</button>
                                 </td>
                             </tr>
                             </tbody>
                         </table>
 
-                        <button type="button" class="btn btn-secondary">Add Column</button>
-                        <button type="button" class="btn btn-secondary">Add Row</button>
+                        <button type="button" class="btn btn-secondary" @click="addColumn()">Add Column</button>
+                        <button type="button" class="btn btn-secondary" @click="addRow()">Add Row</button>
                     </div>
 
                     <div class="card-footer text-right">
@@ -49,37 +52,41 @@
             return {
                 data: [
                     {
-                        first_name: 'John',
-                        last_name: 'Doe',
+                        firstName: 'John',
+                        lastName: 'Doe',
                         emailAddress: 'john.doe@example.com'
                     },
-                    {
-                        first_name: 'John',
-                        last_name: 'Doe',
-                        emailAddress: 'john.doe@example.com'
-                    },
-
                 ],
                 columns: [
-                    {key: 'first_name'},
-                    {key: 'last_name'},
+                    {key: 'firstName'},
+                    {key: 'lastName'},
                     {key: 'emailAddress'},
-
-                ]
+                ],
+                maxColumnsLength: 10,
             }
         },
 
         methods: {
-            add_row() {
-                // Add new row to data with column keys
+            addRow() {
+                let newRow = {};
+                this.columns.forEach(column => newRow[column.key] = "");
+
+                this.data.push(newRow);
             },
 
-            remove_row(row_index) {
-                // remove the given row
+            removeRow(rowIndex) {
+                if (this.data[rowIndex]) this.$delete(this.data, rowIndex);
             },
 
-            add_column() {
+            addColumn() {
+                let columnsLength = this.columns.length;
 
+                if (columnsLength > this.maxColumnsLength) return;
+
+                const newKey = "column" + ++columnsLength;
+
+                this.columns.push({key: newKey});
+                this.data.forEach(row => row[newKey] = "");
             },
 
             updateColumnKey(column, event) {
@@ -104,16 +111,23 @@
                 )
             },
 
+            fileDownload(response) {
+                console.log(response);
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+
+                link.href = url;
+                link.setAttribute('download', 'file.csv');
+                document.body.appendChild(link);
+
+                link.click();
+            },
+
             submit() {
-                return axios.patch('/api/csv-export', this.data);
+                axios.patch('/api/csv-export', this.data)
+                    .then(response => this.fileDownload(response))
+                    .catch(error => alert(error));
             }
         },
-
-        watch: {
-        }
     }
 </script>
-
-<style scoped>
-
-</style>
